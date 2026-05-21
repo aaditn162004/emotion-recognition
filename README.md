@@ -14,10 +14,10 @@ emotion_recognition/
 │   ├── main.py          # FastAPI app
 │   ├── inference.py     # Model loading & prediction
 │   └── requirements.txt
-├── frontend/
+├── docs/                    # served by GitHub Pages
 │   ├── index.html
 │   ├── style.css
-│   └── script.js        # ← update API_URL here before deploying
+│   └── script.js        # ← API_URL is set here
 ├── src/
 │   ├── model.py         # CNN architecture
 │   ├── train.py         # Training script
@@ -49,9 +49,9 @@ curl http://localhost:8000/health
 
 ### 2 · Frontend
 
-Open `frontend/index.html` directly in your browser — no build step needed.
+Open `docs/index.html` directly in your browser — no build step needed.
 
-> The frontend reads `API_URL = 'http://localhost:8000'` in `script.js`.  
+> The frontend reads `API_URL = 'http://localhost:8000'` in `docs/script.js` for local dev.  
 > Allow camera access when prompted.
 
 ---
@@ -71,12 +71,12 @@ Open `frontend/index.html` directly in your browser — no build step needed.
 ### Frontend → GitHub Pages
 
 1. In your GitHub repo → **Settings → Pages**.
-2. Source: **Deploy from branch** → branch `main` → folder `/frontend`.
+2. Source: **Deploy from branch** → branch `main` → folder `/docs`.
 3. Save. GitHub Pages URL: `https://<your-username>.github.io/<repo-name>/`
 
-**Before pushing:** update `API_URL` in `frontend/script.js`:
+**Before pushing:** update `API_URL` in `docs/script.js`:
 ```js
-const API_URL = 'https://emotion-recognition-api.onrender.com';
+const API_URL = 'https://your-service.onrender.com';
 ```
 
 > GitHub Pages requires HTTPS. The Render backend already runs on HTTPS. ✓
