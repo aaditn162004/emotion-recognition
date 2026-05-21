@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emotion Recognition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1 class="logo">
+        <span class="logo-icon">🎭</span>
+        Emotion Recognition
+      </h1>
+      <p class="subtitle">Real-time facial emotion detection · powered by deep learning</p>
+    </header>
+
+    <main class="main">
+      <!-- Camera feed -->
+      <section class="camera-section">
+        <div class="video-wrapper">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="overlay"></canvas>
+          <div id="statusBadge" class="status-badge status-idle">● Idle</div>
+        </div>
+
+        <div class="controls">
+          <button id="startBtn" class="btn btn-primary">
+            <span class="btn-icon">▶</span> Start Camera
+          </button>
+          <button id="stopBtn" class="btn btn-secondary" disabled>
+            <span class="btn-icon">■</span> Stop
+          </button>
+          <span class="fps-display" id="fpsDisplay"></span>
+        </div>
+      </section>
+
+      <!-- Emotion panel -->
+      <aside class="emotion-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Live Emotions</h2>
+          <span class="face-count" id="faceCount">—</span>
+        </div>
+
+        <div id="emotionDisplay" class="emotion-display">
+          <div class="placeholder">
+            <div class="placeholder-icon">👤</div>
+            <p>Point your camera at a face<br />to begin detection</p>
+          </div>
+        </div>
+
+        <div class="panel-footer">
+          <span class="model-tag">FER2013 · 7 emotions · PyTorch CNN</span>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Hidden canvas for frame capture -->
+  <canvas id="capture" style="display:none"></canvas>
+
+  <script src="script.js"></script>
+</body>
+</html>
