@@ -31,9 +31,8 @@ emotion_recognition/
 │   ├── train.py         # Training script
 │   ├── app.py           # Original OpenCV webcam app
 │   └── data_loader.py
-├── saved_models/
-│   └── emotion_model.pth
-├── render.yaml          # One-click Render deployment
+├── saved_models/        # model stored on HF Hub (not in git)
+├── Dockerfile           # HF Spaces deployment
 └── .gitignore           # Excludes data/ (35 K images)
 ```
 
@@ -66,15 +65,13 @@ Open `docs/index.html` directly in your browser — no build step needed.
 
 ## Deployment
 
-### Backend → Render (free tier)
+### Backend → Hugging Face Spaces
 
-1. Push this repo to GitHub.
-2. Go to [render.com](https://render.com) → **New Web Service** → connect your repo.
-3. Render auto-detects `render.yaml` and configures everything. Click **Deploy**.
-4. Copy your service URL (e.g. `https://emotion-recognition-api.onrender.com`).
-
-> **Note:** The free tier spins down after inactivity. First request may take ~30 s.  
-> For faster cold starts, use a paid plan or add a `/health` ping cron.
+1. Upload your model to HF Hub: `huggingface-cli upload <username>/emotion-recognition-model saved_models/emotion_model.pth emotion_model.pth --repo-type model`
+2. Create a new Space at [huggingface.co/new-space](https://huggingface.co/new-space) → SDK: **Docker**
+3. Push the backend code (no model binary) to the Space's git repo
+4. The `Dockerfile` downloads the model from HF Hub at build time
+5. Your API URL: `https://<username>-emotion-recognition.hf.space`
 
 ### Frontend → GitHub Pages
 
@@ -84,10 +81,10 @@ Open `docs/index.html` directly in your browser — no build step needed.
 
 **Before pushing:** update `API_URL` in `docs/script.js`:
 ```js
-const API_URL = 'https://your-service.onrender.com';
+const API_URL = 'https://<username>-emotion-recognition.hf.space';
 ```
 
-> GitHub Pages requires HTTPS. The Render backend already runs on HTTPS. ✓
+> GitHub Pages requires HTTPS. Hugging Face Spaces runs on HTTPS. ✓
 
 ---
 
@@ -142,4 +139,4 @@ Dataset: FER2013 (place in `data/fer2013/train/` and `data/fer2013/test/`).
 | Dataset | FER2013 (28 709 train / 7 178 test images) |
 | Backend | FastAPI + uvicorn |
 | Frontend | Vanilla HTML / CSS / JS |
-| Deployment | Render (backend) + GitHub Pages (frontend) |
+| Deployment | Hugging Face Spaces (backend) + GitHub Pages (frontend) |

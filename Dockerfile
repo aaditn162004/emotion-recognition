@@ -7,11 +7,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt ./backend/requirements.txt
-RUN pip install --no-cache-dir -r backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt huggingface_hub
 
 COPY backend/ ./backend/
 COPY src/ ./src/
-COPY saved_models/ ./saved_models/
+
+# Download model from HF Hub at build time
+RUN mkdir -p /app/saved_models && \
+    python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='aaditn/emotion-recognition-model', filename='emotion_model.pth', local_dir='/app/saved_models/')"
 
 WORKDIR /app/backend
 
