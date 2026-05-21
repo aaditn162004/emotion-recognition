@@ -1,5 +1,5 @@
 // ── Config ──────────────────────────────────────────────────────────────────
-const API_URL = 'https://emotion-recognition-7qal.onrender.com';
+const API_URL = 'https://aaditn-emotion-recognition.hf.space';
 
 const CAPTURE_INTERVAL_MS = 300;
 const JPEG_QUALITY  = 0.6;
