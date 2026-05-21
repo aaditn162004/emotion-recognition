@@ -1,10 +1,11 @@
 // ── Config ──────────────────────────────────────────────────────────────────
-// When deployed: replace with your Render backend URL
-// e.g. 'https://emotion-recognition-api.onrender.com'
 const API_URL = 'https://emotion-recognition-7qal.onrender.com';
 
-const CAPTURE_INTERVAL_MS = 300;  // ~3 fps sent to backend
-const JPEG_QUALITY = 0.75;
+const CAPTURE_INTERVAL_MS = 300;
+const JPEG_QUALITY  = 0.6;
+const CAPTURE_W     = 320;   // send small frames to keep latency low
+const CAPTURE_H     = 240;
+const FETCH_TIMEOUT = 8000;  // abort if backend takes > 8s
 
 // ── Emotion metadata ─────────────────────────────────────────────────────────
 const EMOTIONS = {
@@ -18,24 +19,28 @@ const EMOTIONS = {
 };
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
-const video         = document.getElementById('video');
-const overlay       = document.getElementById('overlay');
-const captureCanvas = document.getElementById('capture');
-const startBtn      = document.getElementById('startBtn');
-const stopBtn       = document.getElementById('stopBtn');
-const statusBadge   = document.getElementById('statusBadge');
-const faceCountEl   = document.getElementById('faceCount');
-const emotionDisplay= document.getElementById('emotionDisplay');
-const fpsDisplay    = document.getElementById('fpsDisplay');
+const video          = document.getElementById('video');
+const overlay        = document.getElementById('overlay');
+const captureCanvas  = document.getElementById('capture');
+const startBtn       = document.getElementById('startBtn');
+const stopBtn        = document.getElementById('stopBtn');
+const statusBadge    = document.getElementById('statusBadge');
+const faceCountEl    = document.getElementById('faceCount');
+const emotionDisplay = document.getElementById('emotionDisplay');
+const fpsDisplay     = document.getElementById('fpsDisplay');
 
-const overlayCtx  = overlay.getContext('2d');
-const captureCtx  = captureCanvas.getContext('2d');
+const overlayCtx = overlay.getContext('2d');
+const captureCtx = captureCanvas.getContext('2d');
+
+// Capture canvas is always small (fast to encode + send)
+captureCanvas.width  = CAPTURE_W;
+captureCanvas.height = CAPTURE_H;
 
 // ── State ────────────────────────────────────────────────────────────────────
 let stream       = null;
 let captureTimer = null;
 let lastFrameTs  = null;
-let inflight     = false;   // prevent concurrent requests
+let inflight     = false;
 
 // ── Camera lifecycle ─────────────────────────────────────────────────────────
 async function startCamera() {
@@ -44,7 +49,11 @@ async function startCamera() {
     video.srcObject = stream;
     await video.play();
 
-    video.addEventListener('loadedmetadata', syncCanvasSizes, { once: true });
+    video.addEventListener('loadedmetadata', () => {
+      // Overlay matches the camera's natural resolution for sharp box drawing
+      overlay.width  = video.videoWidth;
+      overlay.height = video.videoHeight;
+    }, { once: true });
 
     startBtn.disabled = true;
     stopBtn.disabled  = false;
@@ -75,27 +84,24 @@ function stopCamera() {
   stopBtn.disabled  = true;
 }
 
-function syncCanvasSizes() {
-  // Match canvas pixel dimensions to the camera's natural resolution
-  overlay.width        = video.videoWidth;
-  overlay.height       = video.videoHeight;
-  captureCanvas.width  = video.videoWidth;
-  captureCanvas.height = video.videoHeight;
-}
-
 // ── Frame processing ─────────────────────────────────────────────────────────
 async function processFrame() {
   if (!stream || video.readyState < 2 || inflight) return;
 
-  captureCtx.drawImage(video, 0, 0);
+  // Draw video into small capture canvas (320×240) to reduce payload size
+  captureCtx.drawImage(video, 0, 0, CAPTURE_W, CAPTURE_H);
   const base64 = captureCanvas.toDataURL('image/jpeg', JPEG_QUALITY).split(',')[1];
 
   inflight = true;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
   try {
-    const res  = await fetch(`${API_URL}/predict`, {
+    const res = await fetch(`${API_URL}/predict`, {
       method : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body   : JSON.stringify({ image: base64 }),
+      signal : controller.signal,
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -105,9 +111,14 @@ async function processFrame() {
     tickFPS();
     setStatus('detecting', '● Detecting…');
   } catch (err) {
-    setStatus('error', '● API error');
-    console.error('Predict error:', err);
+    if (err.name === 'AbortError') {
+      setStatus('error', '● Timeout');
+    } else {
+      setStatus('error', '● API error');
+      console.error('Predict error:', err);
+    }
   } finally {
+    clearTimeout(timer);
     inflight = false;
   }
 }
@@ -115,7 +126,8 @@ async function processFrame() {
 function tickFPS() {
   const now = Date.now();
   if (lastFrameTs) {
-    fpsDisplay.textContent = `${Math.round(1000 / (now - lastFrameTs))} fps`;
+    const fps = (1000 / (now - lastFrameTs)).toFixed(1);
+    fpsDisplay.textContent = `${fps} fps`;
   }
   lastFrameTs = now;
 }
@@ -132,17 +144,25 @@ function renderResults(faces) {
 
   faceCountEl.textContent = faces.length === 1 ? '1 face' : `${faces.length} faces`;
 
-  faces.forEach(face => drawFaceBox(face));
+  // Scale boxes from capture resolution (320×240) → overlay resolution
+  const scaleX = overlay.width  / CAPTURE_W;
+  const scaleY = overlay.height / CAPTURE_H;
+
+  faces.forEach(face => drawFaceBox(face, scaleX, scaleY));
   updateEmotionPanel(faces[0]);
 }
 
-function drawFaceBox(face) {
-  const [x1, y1, x2, y2] = face.box;
+function drawFaceBox(face, scaleX, scaleY) {
+  const [bx1, by1, bx2, by2] = face.box;
+  const x1 = bx1 * scaleX;
+  const y1 = by1 * scaleY;
+  const x2 = bx2 * scaleX;
+  const y2 = by2 * scaleY;
+
   const meta  = EMOTIONS[face.emotion] || { emoji: '', color: '#7c6ef4' };
   const pct   = Math.round(face.confidence * 100);
   const label = `${meta.emoji} ${face.emotion} ${pct}%`;
 
-  // Glowing bounding box
   overlayCtx.shadowColor = meta.color;
   overlayCtx.shadowBlur  = 10;
   overlayCtx.strokeStyle = meta.color;
@@ -150,20 +170,18 @@ function drawFaceBox(face) {
   overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
   overlayCtx.shadowBlur  = 0;
 
-  // Label pill
   overlayCtx.font = 'bold 14px Inter, sans-serif';
-  const textW   = overlayCtx.measureText(label).width;
-  const padX    = 8;
-  const padY    = 5;
-  const labelH  = 24;
-  const lx      = x1;
-  const ly      = Math.max(0, y1 - labelH - 4);
+  const textW  = overlayCtx.measureText(label).width;
+  const padX   = 8;
+  const labelH = 24;
+  const lx     = x1;
+  const ly     = Math.max(0, y1 - labelH - 4);
 
   overlayCtx.fillStyle = meta.color;
   overlayCtx.fillRect(lx, ly, textW + padX * 2, labelH);
 
   overlayCtx.fillStyle = '#000';
-  overlayCtx.fillText(label, lx + padX, ly + labelH - padY);
+  overlayCtx.fillText(label, lx + padX, ly + labelH - 5);
 }
 
 function updateEmotionPanel(face) {
@@ -178,7 +196,6 @@ function updateEmotionPanel(face) {
         <span class="dominant-conf">${Math.round(face.confidence * 100)}% confident</span>
       </div>
     </div>
-
     <div class="emotion-bars">
       ${sorted.map(([emotion, prob]) => {
         const m = EMOTIONS[emotion] || { emoji: '', color: '#7c6ef4' };
