@@ -6,6 +6,14 @@ Real-time facial emotion detection using a PyTorch CNN trained on FER2013. The b
 
 ---
 
+## Live demo
+
+**No setup needed** — just open the link below in Chrome or Edge, allow camera access, and point at your face:
+
+🔗 **[https://aaditn162004.github.io/emotion-recognition/](https://aaditn162004.github.io/emotion-recognition/)**
+
+---
+
 ## Project structure
 
 ```
