@@ -1,7 +1,7 @@
 // ── Config ──────────────────────────────────────────────────────────────────
 // When deployed: replace with your Render backend URL
 // e.g. 'https://emotion-recognition-api.onrender.com'
-const API_URL = 'http://localhost:8000';
+const API_URL = 'https://emotion-recognition-7qal.onrender.com';
 
 const CAPTURE_INTERVAL_MS = 300;  // ~3 fps sent to backend
 const JPEG_QUALITY = 0.75;
