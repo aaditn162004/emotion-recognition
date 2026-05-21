@@ -28,6 +28,7 @@ const statusBadge    = document.getElementById('statusBadge');
 const faceCountEl    = document.getElementById('faceCount');
 const emotionDisplay = document.getElementById('emotionDisplay');
 const fpsDisplay     = document.getElementById('fpsDisplay');
+const videoWrapper   = document.getElementById('videoWrapper');
 
 const overlayCtx = overlay.getContext('2d');
 const captureCtx = captureCanvas.getContext('2d');
@@ -60,6 +61,7 @@ async function startCamera() {
     setStatus('detecting', '● Detecting…');
 
     captureTimer = setInterval(processFrame, CAPTURE_INTERVAL_MS);
+    videoWrapper.classList.add('scanning');
   } catch (err) {
     setStatus('error', '● Camera error');
     console.error('Camera error:', err);
@@ -75,6 +77,8 @@ function stopCamera() {
   video.srcObject = null;
 
   overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+  videoWrapper.classList.remove('scanning');
+  setEmotionColor('#7c6ef4');
   setStatus('idle', '● Idle');
   faceCountEl.textContent = '—';
   fpsDisplay.textContent  = '';
@@ -138,18 +142,23 @@ function renderResults(faces) {
 
   if (!faces || faces.length === 0) {
     faceCountEl.textContent = 'No faces';
+    setEmotionColor('#7c6ef4');
     showPlaceholder();
     return;
   }
 
   faceCountEl.textContent = faces.length === 1 ? '1 face' : `${faces.length} faces`;
 
-  // Scale boxes from capture resolution (320×240) → overlay resolution
   const scaleX = overlay.width  / CAPTURE_W;
   const scaleY = overlay.height / CAPTURE_H;
 
   faces.forEach(face => drawFaceBox(face, scaleX, scaleY));
   updateEmotionPanel(faces[0]);
+  setEmotionColor(EMOTIONS[faces[0].emotion]?.color || '#7c6ef4');
+}
+
+function setEmotionColor(color) {
+  document.documentElement.style.setProperty('--emotion-color', color);
 }
 
 function drawFaceBox(face, scaleX, scaleY) {
@@ -190,7 +199,10 @@ function updateEmotionPanel(face) {
 
   emotionDisplay.innerHTML = `
     <div class="dominant">
-      <span class="dominant-emoji">${meta.emoji}</span>
+      <div class="dominant-emoji-wrap">
+        <span class="dominant-emoji">${meta.emoji}</span>
+        <div class="pulse-ring"></div>
+      </div>
       <div class="dominant-info">
         <span class="dominant-name">${face.emotion}</span>
         <span class="dominant-conf">${Math.round(face.confidence * 100)}% confident</span>

@@ -6,36 +6,51 @@
   <title>Emotion Recognition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Background orbs -->
+  <div class="bg-orb orb1"></div>
+  <div class="bg-orb orb2"></div>
+  <div class="bg-orb orb3"></div>
+
   <div class="app">
     <header class="header">
-      <h1 class="logo">
-        <span class="logo-icon">🎭</span>
-        Emotion Recognition
-      </h1>
-      <p class="subtitle">Real-time facial emotion detection · powered by deep learning</p>
+      <div class="header-badge">AI · Real-time · PyTorch</div>
+      <h1 class="logo">Emotion Recognition</h1>
+      <p class="subtitle">Point your camera at a face — deep learning does the rest</p>
     </header>
 
     <main class="main">
       <!-- Camera feed -->
       <section class="camera-section">
-        <div class="video-wrapper">
+        <div class="video-wrapper" id="videoWrapper">
           <video id="video" autoplay muted playsinline></video>
           <canvas id="overlay"></canvas>
+
+          <!-- HUD corners -->
+          <div class="corner tl"></div>
+          <div class="corner tr"></div>
+          <div class="corner bl"></div>
+          <div class="corner br"></div>
+
+          <!-- Scan line -->
+          <div class="scan-line" id="scanLine"></div>
+
           <div id="statusBadge" class="status-badge status-idle">● Idle</div>
+          <div class="fps-badge" id="fpsDisplay"></div>
         </div>
 
         <div class="controls">
           <button id="startBtn" class="btn btn-primary">
-            <span class="btn-icon">▶</span> Start Camera
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            Start Camera
           </button>
           <button id="stopBtn" class="btn btn-secondary" disabled>
-            <span class="btn-icon">■</span> Stop
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+            Stop
           </button>
-          <span class="fps-display" id="fpsDisplay"></span>
         </div>
       </section>
 
@@ -54,15 +69,13 @@
         </div>
 
         <div class="panel-footer">
-          <span class="model-tag">FER2013 · 7 emotions · PyTorch CNN</span>
+          <span class="model-tag">FER2013 · 7 emotions · CNN</span>
         </div>
       </aside>
     </main>
   </div>
 
-  <!-- Hidden canvas for frame capture -->
   <canvas id="capture" style="display:none"></canvas>
-
   <script src="script.js"></script>
 </body>
 </html>
